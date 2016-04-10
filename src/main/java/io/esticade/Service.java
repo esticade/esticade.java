@@ -38,5 +38,12 @@ public class Service {
         connector.registerListener("*." + eventName, serviceName + "-" + eventName, (JsonObject obj) -> callback.accept(new Event(serviceName, obj)));
     }
 
+    public void shutdown() {
+        ConnectionFactory.shutdown();
+    }
 
+    public void alwaysOn(String eventName, Consumer<Event> callback) {
+        connector.registerListener("*." + eventName, null, (JsonObject obj) -> callback.accept(new Event(serviceName, obj)));
+
+    }
 }

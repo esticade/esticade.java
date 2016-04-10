@@ -1,6 +1,9 @@
 package io.esticade;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;
 
 import javax.json.*;
@@ -14,6 +17,11 @@ public class ServiceTest{
     @Before
     public void init() throws IOException {
         service = new Service("TestService");
+    }
+
+    @After
+    public void shutdown() {
+        service.shutdown();
     }
 
     @Test
@@ -72,40 +80,75 @@ public class ServiceTest{
 
     @Test
     public void testStringEmit() throws InterruptedException, ExecutionException, TimeoutException {
-        Event ev = withListener("EmitString", (eventName) -> {
-            service.emit(eventName, "Test String");
-        });
-
-        JsonString result = (JsonString)ev.body;
-
-        assertEquals("Test String", result.getString());
+        Event ev = withListener("EmitString", (eventName) -> service.emit(eventName, "Test String"));
+        assertEquals("Test String", ((JsonString)ev.body).getString());
     }
 
     @Test
     public void testIntegerEmit() throws InterruptedException, ExecutionException, TimeoutException {
-        Event ev = withListener("EmitNumber", (eventName) -> {
-            service.emit(eventName, 123);
-        });
-
-        JsonNumber result = (JsonNumber)ev.body;
-
-        assertEquals(123, result.intValue());
+        Event ev = withListener("EmitNumber", (eventName) -> service.emit(eventName, 123));
+        assertEquals(123, ((JsonNumber)ev.body).intValue());
     }
 
 
     @Test
     public void testDoubleEmit() throws InterruptedException, ExecutionException, TimeoutException {
-        Event ev = withListener("EmitDouble", (eventName) -> {
-            service.emit(eventName, 123.456);
+        Event ev = withListener("EmitDouble", (eventName) -> service.emit(eventName, 123.456));
+        assertEquals(123.456, ((JsonNumber)ev.body).doubleValue(), 0.0001);
+    }
+
+    @Test
+    public void testBalance() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        Service service2 = new Service("TestService");
+
+        CompletableFuture<Event> service1Balance = new CompletableFuture<>();
+        CompletableFuture<Event> service2Balance = new CompletableFuture<>();
+
+        service.on("BalanceTest", service1Balance::complete);
+        service2.on("BalanceTest", service2Balance::complete);
+
+        service.emit("BalanceTest", 0);
+        service1Balance.get(2, TimeUnit.SECONDS);
+
+        assertFalse(service2Balance.isDone());
+
+        service.emit("BalanceTest", 0);
+        service2Balance.get(2, TimeUnit.SECONDS);
+    }
+
+
+    @Test
+    public void testAlwaysOn() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        Service service2 = new Service("TestService");
+        final int[] alwaysOnCounter = {0};
+
+        CompletableFuture<Event> service1Called = new CompletableFuture<>();
+        CompletableFuture<Event> service2Called = new CompletableFuture<>();
+        CompletableFuture<Event> alwaysOnCalledTwice = new CompletableFuture<>();
+
+        service.alwaysOn("AlwaysOnTest", (Event ev) -> {
+            alwaysOnCounter[0]++;
+            if(alwaysOnCounter[0] == 2){
+                alwaysOnCalledTwice.complete(ev);
+            }
         });
 
-        JsonNumber result = (JsonNumber)ev.body;
+        service.on("AlwaysOnTest", service1Called::complete);
+        service2.on("AlwaysOnTest", service2Called::complete);
 
-        assertEquals(123.456, result.doubleValue(), 0.0001);
+        service.emit("AlwaysOnTest", 0);
+        service1Called.get(2, TimeUnit.SECONDS);
+
+        assertFalse(service2Called.isDone());
+
+        service.emit("AlwaysOnTest", 0);
+        service2Called.get(2, TimeUnit.SECONDS);
+
+        alwaysOnCalledTwice.get(2, TimeUnit.SECONDS);
     }
 
     private Event withListener(String eventName, Consumer<String> emit) throws InterruptedException, ExecutionException, TimeoutException {
-        CompletableFuture<Event> future = new CompletableFuture<Event>();
+        CompletableFuture<Event> future = new CompletableFuture<>();
         service.on(eventName, future::complete);
         emit.accept(eventName);
         return future.get(2, TimeUnit.SECONDS);

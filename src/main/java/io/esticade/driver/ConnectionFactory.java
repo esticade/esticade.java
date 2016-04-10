@@ -14,4 +14,9 @@ public class ConnectionFactory {
         }
         return connector;
     }
+
+    public static void shutdown() {
+        connector.shutdown();
+        connector = null;
+    }
 }

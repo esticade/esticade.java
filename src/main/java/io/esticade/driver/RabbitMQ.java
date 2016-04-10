@@ -49,9 +49,29 @@ class RabbitMQ implements Connector {
     @Override
     public void registerListener(String routingKey, String queueName, Consumer<JsonObject> callback) {
         try {
-            AMQP.Queue.DeclareOk queueOk = channel.queueDeclare(queueName, false, false, true, null);
-            channel.queueBind(queueOk.getQueue(), EXCHANGE, routingKey);
-            channel.basicConsume(queueOk.getQueue(), false, createConsumer(callback));
+            String queue = getQueue(queueName);
+            channel.queueBind(queue, EXCHANGE, routingKey);
+            channel.basicConsume(queue, false, createConsumer(callback));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getQueue(String queueName) throws IOException {
+        AMQP.Queue.DeclareOk queueOk;
+        if(queueName != null){
+            queueOk = channel.queueDeclare(queueName, false, false, true, null);
+        } else {
+            queueOk = channel.queueDeclare();
+        }
+        return queueOk.getQueue();
+    }
+
+    @Override
+    public void shutdown() {
+        try {
+            connection.close();
+            connection = null;
         } catch (IOException e) {
             e.printStackTrace();
         }
