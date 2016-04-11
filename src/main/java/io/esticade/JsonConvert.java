@@ -37,4 +37,12 @@ class JsonConvert {
 
         return obj.getJsonNumber("body");
     }
+
+    static JsonValue toJsonValue(boolean payload) {
+        JsonObject obj = Json.createObjectBuilder()
+                .add("body", payload)
+                .build();
+
+        return obj.get("body");
+    }
 }

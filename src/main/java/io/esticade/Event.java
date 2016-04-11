@@ -85,4 +85,19 @@ public class Event {
             e.printStackTrace();
         }
     }
+
+    public void emit(String eventName, String payload) { emit(eventName, JsonConvert.toJsonValue(payload)); }
+
+    public void emit(String eventName, int payload) {
+        emit(eventName, JsonConvert.toJsonValue(payload));
+    }
+
+    public void emit(String eventName, double payload) {
+        emit(eventName, JsonConvert.toJsonValue(payload));
+    }
+
+    public void emit(String eventName, boolean payload) {
+        emit(eventName, JsonConvert.toJsonValue(payload));
+    }
+
 }

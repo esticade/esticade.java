@@ -98,6 +98,12 @@ public class ServiceTest{
     }
 
     @Test
+    public void testBoolEmit() throws InterruptedException, ExecutionException, TimeoutException {
+        Event ev = withListener("EmitBool", (eventName) -> service.emit(eventName, true));
+        assertEquals(JsonValue.TRUE, ev.body);
+    }
+
+    @Test
     public void testBalance() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         Service service2 = new Service("TestService");
 
@@ -145,6 +151,35 @@ public class ServiceTest{
         service2Called.get(2, TimeUnit.SECONDS);
 
         alwaysOnCalledTwice.get(2, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testEventEmitSupportsDifferentTypes() throws ExecutionException, InterruptedException, TimeoutException {
+        CompletableFuture<Event> stringOk = new CompletableFuture<>();
+        CompletableFuture<Event> intOk = new CompletableFuture<>();
+        CompletableFuture<Event> doubleOk = new CompletableFuture<>();
+        CompletableFuture<Event> boolOk = new CompletableFuture<>();
+
+        service.on("EventEmitTestString", stringOk::complete);
+        service.on("EventEmitTestInt", intOk::complete);
+        service.on("EventEmitTestDouble", doubleOk::complete);
+        service.on("EventEmitTestBoolean", boolOk::complete);
+
+        service.on("EventEmitTest", event -> {
+            event.emit("EventEmitTestString", "TestString");
+            event.emit("EventEmitTestInt", 893);
+            event.emit("EventEmitTestDouble", 893.456);
+            event.emit("EventEmitTestBoolean", true);
+        });
+
+        service.emit("EventEmitTest", 0);
+
+        assertEquals("TestString", ((JsonString)stringOk.get(1, TimeUnit.SECONDS).body).getString());
+        assertEquals(893, ((JsonNumber)intOk.get(1, TimeUnit.SECONDS).body).longValue());
+        assertEquals(893.456, ((JsonNumber)doubleOk.get(1, TimeUnit.SECONDS).body).doubleValue(), 0.0001);
+        assertEquals(JsonValue.TRUE, boolOk.get(1, TimeUnit.SECONDS).body);
+
+
     }
 
     private Event withListener(String eventName, Consumer<String> emit) throws InterruptedException, ExecutionException, TimeoutException {

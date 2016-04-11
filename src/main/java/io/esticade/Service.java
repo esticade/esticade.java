@@ -33,6 +33,10 @@ public class Service {
         connector.emit(new Event(serviceName, eventName, JsonConvert.toJsonValue(payload)));
     }
 
+    public void emit(String eventName, boolean payload) {
+        connector.emit(new Event(serviceName, eventName, JsonConvert.toJsonValue(payload)));
+    }
+
     public void on(String eventName, Consumer<Event> callback) {
         connector.registerListener("*." + eventName, serviceName + "-" + eventName, (JsonObject obj) -> callback.accept(new Event(serviceName, obj)));
     }
@@ -45,4 +49,6 @@ public class Service {
         connector.registerListener("*." + eventName, null, (JsonObject obj) -> callback.accept(new Event(serviceName, obj)));
 
     }
+
+
 }
