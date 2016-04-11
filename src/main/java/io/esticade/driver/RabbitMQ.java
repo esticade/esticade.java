@@ -20,17 +20,21 @@ import java.util.function.Consumer;
  * Created by Jaan on 06.04.2016.
  */
 class RabbitMQ implements Connector {
-    public static final String EXCHANGE = "events";
+    private final boolean engraved;
+    private final String exchange;
     private Connection connection;
     private Channel channel;
     private BasicProperties props;
 
-    RabbitMQ(String connectionUri) throws NoSuchAlgorithmException, KeyManagementException, URISyntaxException, IOException, TimeoutException {
+    RabbitMQ(String connectionUri, String exchange, boolean engraved) throws NoSuchAlgorithmException, KeyManagementException, URISyntaxException, IOException, TimeoutException {
+        this.exchange = exchange;
+        this.engraved = engraved;
+
         ConnectionFactory factory = new ConnectionFactory();
         factory.setUri(connectionUri);
         connection = factory.newConnection();
         channel = connection.createChannel();
-        channel.exchangeDeclare(EXCHANGE, "topic", true);
+        channel.exchangeDeclare(this.exchange, "topic", true);
 
         props = new BasicProperties.Builder()
                 .contentType("application/json")
@@ -40,7 +44,7 @@ class RabbitMQ implements Connector {
     @Override
     public void emit(Event event) {
         try {
-            channel.basicPublish(EXCHANGE, event.correlationBlock + "." + event.name, props, event.toString().getBytes());
+            channel.basicPublish(exchange, event.correlationBlock + "." + event.name, props, event.toString().getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -50,7 +54,7 @@ class RabbitMQ implements Connector {
     public void registerListener(String routingKey, String queueName, Consumer<JsonObject> callback) {
         try {
             String queue = getQueue(queueName);
-            channel.queueBind(queue, EXCHANGE, routingKey);
+            channel.queueBind(queue, exchange, routingKey);
             channel.basicConsume(queue, false, createConsumer(callback));
         } catch (IOException e) {
             e.printStackTrace();

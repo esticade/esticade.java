@@ -3,6 +3,23 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <groupId>io.esticade</groupId>
+    <artifactId>esticade</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Esticade</name>
+    <description>Java entry point to Esticade ecosystem - quick and simple pubsub library using RabbitMQ as backend.</description>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <scm>
+        <url>https://github.com/esticade/esticade.java</url>
+    </scm>
 
     <build>
         <plugins>
@@ -17,9 +34,6 @@
         </plugins>
     </build>
 
-    <groupId>io.esticade</groupId>
-    <artifactId>esticade</artifactId>
-    <version>1.0-SNAPSHOT</version>
     <dependencies>
         <dependency>
             <groupId>org.glassfish</groupId>
@@ -37,7 +51,10 @@
             <version>RELEASE</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>RELEASE</version>
+        </dependency>
     </dependencies>
-
-
 </project>

@@ -1,13 +1,14 @@
 package io.esticade.driver;
-
 import java.io.IOException;
 
 public class ConnectionFactory {
     private static Connector connector;
     public static Connector getConnection() throws IOException {
+        Configuration config = Configuration.getConfig();
+
         if(connector == null){
             try {
-                connector = new RabbitMQ("amqp://localhost");
+                connector = new RabbitMQ(config.amqpUrl, config.exchange, config.engraved);
             } catch (Exception e) {
                 throw new IOException(e);
             }

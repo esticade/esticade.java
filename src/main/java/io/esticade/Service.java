@@ -4,7 +4,6 @@ import io.esticade.driver.ConnectionFactory;
 import io.esticade.driver.Connector;
 
 import javax.json.JsonObject;
-import javax.json.JsonString;
 import javax.json.JsonValue;
 import java.io.IOException;
 import java.util.function.Consumer;
