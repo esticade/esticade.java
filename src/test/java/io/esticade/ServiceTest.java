@@ -178,8 +178,6 @@ public class ServiceTest{
         assertEquals(893, ((JsonNumber)intOk.get(1, TimeUnit.SECONDS).body).longValue());
         assertEquals(893.456, ((JsonNumber)doubleOk.get(1, TimeUnit.SECONDS).body).doubleValue(), 0.0001);
         assertEquals(JsonValue.TRUE, boolOk.get(1, TimeUnit.SECONDS).body);
-
-
     }
 
     private Event withListener(String eventName, Consumer<String> emit) throws InterruptedException, ExecutionException, TimeoutException {

@@ -51,4 +51,7 @@ public class Service {
     }
 
 
+    public EmitChain emitChain(String eventName, JsonValue payload) {
+        return new EmitChain(eventName, payload, serviceName, connector);
+    }
 }
