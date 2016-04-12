@@ -14,9 +14,6 @@ import java.util.concurrent.TimeoutException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-/**
- * Created by jaan.pullerits on 11/04/16.
- */
 public class EventChainTest {
     Service service;
 
@@ -92,5 +89,28 @@ public class EventChainTest {
         responder.get(2, TimeUnit.SECONDS).emit("OutsideChainTestResponse", 456);
         int receivedValue = ((JsonNumber)responseReceivedInChainHandler.get(2, TimeUnit.SECONDS).body).intValue();
         assertEquals("Chain handler should receive 456", 456, receivedValue);
+    }
+
+    @Test
+    public void testEventSentAfterTimeoutWillNotBeReceived() throws InterruptedException {
+        CompletableFuture<Event> response = new CompletableFuture<>();
+
+        service.on("TimeOutEvent", event -> {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            event.emit("TimeOutEvent-Response");
+        });
+
+        service.emitChain("TimeOutEvent")
+                .on("TimeOutEvent-Response", response::complete)
+                .timeout(300)
+                .execute();
+
+        Thread.sleep(600);
+
+        assertFalse("The TimeOutEvent-Response should never be received", response.isDone());
     }
 }

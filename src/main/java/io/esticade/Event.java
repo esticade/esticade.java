@@ -106,4 +106,7 @@ public final class Event {
         emit(eventName, JsonConvert.toJsonValue(payload));
     }
 
+    public void emit(String eventName) {
+        emit(eventName, JsonValue.NULL);
+    }
 }

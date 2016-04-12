@@ -16,9 +16,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-/**
- * Created by Jaan on 06.04.2016.
- */
 class RabbitMQ implements Connector {
     private final boolean engraved;
     private final String exchange;
@@ -51,14 +48,15 @@ class RabbitMQ implements Connector {
     }
 
     @Override
-    public void registerListener(String routingKey, String queueName, Consumer<JsonObject> callback) {
+    public String registerListener(String routingKey, String queueName, Consumer<JsonObject> callback) {
         try {
             String queue = getQueue(queueName);
             channel.queueBind(queue, exchange, routingKey);
-            channel.basicConsume(queue, false, createConsumer(callback));
+            return channel.basicConsume(queue, false, createConsumer(callback));
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
     private String getQueue(String queueName) throws IOException {
@@ -76,6 +74,15 @@ class RabbitMQ implements Connector {
         try {
             connection.close();
             connection = null;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void deleteListener(String tag) {
+        try {
+            channel.basicCancel(tag);
         } catch (IOException e) {
             e.printStackTrace();
         }

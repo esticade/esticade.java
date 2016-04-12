@@ -165,17 +165,20 @@ public class ServiceTest{
         CompletableFuture<Event> intOk = new CompletableFuture<>();
         CompletableFuture<Event> doubleOk = new CompletableFuture<>();
         CompletableFuture<Event> boolOk = new CompletableFuture<>();
+        CompletableFuture<Event> nullOk = new CompletableFuture<>();
 
         service.on("EventEmitTestString", stringOk::complete);
         service.on("EventEmitTestInt", intOk::complete);
         service.on("EventEmitTestDouble", doubleOk::complete);
         service.on("EventEmitTestBoolean", boolOk::complete);
+        service.on("EventEmitTestNull", nullOk::complete);
 
         service.on("EventEmitTest", event -> {
             event.emit("EventEmitTestString", "TestString");
             event.emit("EventEmitTestInt", 893);
             event.emit("EventEmitTestDouble", 893.456);
             event.emit("EventEmitTestBoolean", true);
+            event.emit("EventEmitTestNull");
         });
 
         service.emit("EventEmitTest", 0);
@@ -184,6 +187,7 @@ public class ServiceTest{
         assertEquals(893, ((JsonNumber)intOk.get(1, TimeUnit.SECONDS).body).longValue());
         assertEquals(893.456, ((JsonNumber)doubleOk.get(1, TimeUnit.SECONDS).body).doubleValue(), 0.0001);
         assertEquals(JsonValue.TRUE, boolOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals(JsonValue.NULL, nullOk.get(1, TimeUnit.SECONDS).body);
     }
 
     @Test

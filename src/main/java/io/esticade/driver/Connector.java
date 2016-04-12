@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 public interface Connector {
     void emit(Event event);
-    void registerListener(String routingKey, String queueName, Consumer<JsonObject> callback);
+    String registerListener(String routingKey, String queueName, Consumer<JsonObject> callback);
     void shutdown();
+    void deleteListener(String tag);
 }
