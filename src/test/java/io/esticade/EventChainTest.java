@@ -113,4 +113,31 @@ public class EventChainTest {
 
         assertFalse("The TimeOutEvent-Response should never be received", response.isDone());
     }
+
+    @Test
+    public void testEventEmitChainSupportsDifferentTypes() throws ExecutionException, InterruptedException, TimeoutException {
+        CompletableFuture<Event> stringOk = new CompletableFuture<>();
+        CompletableFuture<Event> intOk = new CompletableFuture<>();
+        CompletableFuture<Event> doubleOk = new CompletableFuture<>();
+        CompletableFuture<Event> boolOk = new CompletableFuture<>();
+        CompletableFuture<Event> nullOk = new CompletableFuture<>();
+
+        service.on("EventEmitTestString", stringOk::complete);
+        service.on("EventEmitTestInt", intOk::complete);
+        service.on("EventEmitTestDouble", doubleOk::complete);
+        service.on("EventEmitTestBoolean", boolOk::complete);
+        service.on("EventEmitTestNull", nullOk::complete);
+
+        service.emitChain("EventEmitTestString", "TestString").execute();
+        service.emitChain("EventEmitTestInt", 893).execute();
+        service.emitChain("EventEmitTestDouble", 893.456).execute();
+        service.emitChain("EventEmitTestBoolean", true).execute();
+        service.emitChain("EventEmitTestNull").execute();
+
+        assertEquals("TestString", ((JsonString)stringOk.get(1, TimeUnit.SECONDS).body).getString());
+        assertEquals(893, ((JsonNumber)intOk.get(1, TimeUnit.SECONDS).body).longValue());
+        assertEquals(893.456, ((JsonNumber)doubleOk.get(1, TimeUnit.SECONDS).body).doubleValue(), 0.0001);
+        assertEquals(JsonValue.TRUE, boolOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals(JsonValue.NULL, nullOk.get(1, TimeUnit.SECONDS).body);
+    }
 }

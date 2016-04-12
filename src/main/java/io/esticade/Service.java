@@ -51,11 +51,26 @@ public class Service {
 
     public void alwaysOn(String eventName, Consumer<Event> callback) {
         connector.registerListener("*." + eventName, null, (JsonObject obj) -> callback.accept(new Event(params, obj)));
-
     }
 
     public EmitChain emitChain(String eventName, JsonValue payload) {
         return new EmitChain(eventName, payload, params, connector);
+    }
+
+    public EmitChain emitChain(String eventName, String payload) {
+        return new EmitChain(eventName, JsonConvert.toJsonValue(payload), params, connector);
+    }
+
+    public EmitChain emitChain(String eventName, long payload) {
+        return new EmitChain(eventName, JsonConvert.toJsonValue(payload), params, connector);
+    }
+
+    public EmitChain emitChain(String eventName, double payload) {
+        return new EmitChain(eventName, JsonConvert.toJsonValue(payload), params, connector);
+    }
+
+    public EmitChain emitChain(String eventName, boolean payload) {
+        return new EmitChain(eventName, JsonConvert.toJsonValue(payload), params, connector);
     }
 
     public EmitChain emitChain(String eventName) {
