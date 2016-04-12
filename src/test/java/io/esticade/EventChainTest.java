@@ -1,10 +1,11 @@
 package io.esticade;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.json.*;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -32,12 +33,11 @@ public class EventChainTest {
     public void testEventChainCanCatchItsOwnMessages() throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Event> responseReceived = new CompletableFuture<>();
 
-        JsonObject testObject = Json.createObjectBuilder()
-                .add("string", "The String")
-                .add("bool", false)
-                .add("number", 123.456)
-                .addNull("null")
-                .build();
+        JsonNode testObject = JsonNodeFactory.instance.objectNode()
+                .put("string", "The String")
+                .put("bool", false)
+                .put("number", 123.456)
+                .putNull("null");
 
         service.emitChain("EmitChainTest", testObject)
             .on("EmitChainTest", responseReceived::complete)
@@ -51,9 +51,8 @@ public class EventChainTest {
     public void testEmitChainCanCatchMessagesFromOtherServices() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         CompletableFuture<Event> responseReceived = new CompletableFuture<>();
 
-        JsonObject testObject = Json.createObjectBuilder()
-                .add("string", "The String")
-                .build();
+        JsonNode testObject = JsonNodeFactory.instance.objectNode()
+                .put("string", "The String");
 
         Service service2 = new Service("Service 2");
         service2.on("EmitChainTest2", (ev) -> ev.emit("EmitChainTest-Response", testObject));
@@ -83,11 +82,11 @@ public class EventChainTest {
         service.emit("OutsideChainTestResponse", 123);
 
         Event event = responseReceivedInNormalHandler.get(2, TimeUnit.SECONDS);
-        assertEquals("The message received by global handler should be 123.", 123, ((JsonNumber)event.body).intValue());
+        assertEquals("The message received by global handler should be 123.", 123, event.body);
         assertFalse("The chain handler should not yet receive event", responseReceivedInChainHandler.isDone());
 
         responder.get(2, TimeUnit.SECONDS).emit("OutsideChainTestResponse", 456);
-        int receivedValue = ((JsonNumber)responseReceivedInChainHandler.get(2, TimeUnit.SECONDS).body).intValue();
+        int receivedValue = (int)responseReceivedInChainHandler.get(2, TimeUnit.SECONDS).body;
         assertEquals("Chain handler should receive 456", 456, receivedValue);
     }
 
@@ -134,10 +133,10 @@ public class EventChainTest {
         service.emitChain("EventEmitTestBoolean", true).execute();
         service.emitChain("EventEmitTestNull").execute();
 
-        assertEquals("TestString", ((JsonString)stringOk.get(1, TimeUnit.SECONDS).body).getString());
-        assertEquals(893, ((JsonNumber)intOk.get(1, TimeUnit.SECONDS).body).longValue());
-        assertEquals(893.456, ((JsonNumber)doubleOk.get(1, TimeUnit.SECONDS).body).doubleValue(), 0.0001);
-        assertEquals(JsonValue.TRUE, boolOk.get(1, TimeUnit.SECONDS).body);
-        assertEquals(JsonValue.NULL, nullOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals("TestString", stringOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals(893, intOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals(893.456, (double)doubleOk.get(1, TimeUnit.SECONDS).body, 0.0001);
+        assertEquals(true, boolOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals(null, nullOk.get(1, TimeUnit.SECONDS).body);
     }
 }

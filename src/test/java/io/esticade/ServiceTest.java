@@ -1,12 +1,12 @@
 package io.esticade;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;
 
-import javax.json.*;
 import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -26,11 +26,10 @@ public class ServiceTest{
 
     @Test
     public void testEmit(){
-        JsonObject testObject = Json.createObjectBuilder()
-                .add("number", 123)
-                .add("string", "test123")
-                .add("bool", false)
-                .build();
+        ObjectNode testObject = JsonNodeFactory.instance.objectNode()
+                .put("number", 123)
+                .put("string", "test123")
+                .put("bool", false);
 
         service.emit("TestEvent", testObject);
     }
@@ -39,11 +38,10 @@ public class ServiceTest{
     public void testOn() throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Event> future = new CompletableFuture<Event>();
 
-        final JsonObject testObject = Json.createObjectBuilder()
-                .add("number", 123)
-                .add("string", "test123")
-                .add("bool", false)
-                .build();
+        final ObjectNode testObject = JsonNodeFactory.instance.objectNode()
+                .put("number", 123)
+                .put("string", "test123")
+                .put("bool", false);
 
         service.on("TestEvent2", future::complete);
 
@@ -60,11 +58,10 @@ public class ServiceTest{
     public void testEventEmit() throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Event> future = new CompletableFuture<Event>();
 
-        final JsonObject testObject = Json.createObjectBuilder()
-                .add("number", 123)
-                .add("string", "test123")
-                .add("bool", false)
-                .build();
+        final ObjectNode testObject = JsonNodeFactory.instance.objectNode()
+                .put("number", 123)
+                .put("string", "test123")
+                .put("bool", false);
 
         service.on("TestEvent3Response", future::complete);
         service.on("TestEvent3", (Event ev) -> ev.emit("TestEvent3Response", testObject));
@@ -81,32 +78,31 @@ public class ServiceTest{
     @Test
     public void testStringEmit() throws InterruptedException, ExecutionException, TimeoutException {
         Event ev = withListener("EmitString", (eventName) -> service.emit(eventName, "Test String"));
-        assertEquals("Test String", ((JsonString)ev.body).getString());
+        assertEquals("Test String", ev.body);
     }
 
     @Test
     public void testIntegerEmit() throws InterruptedException, ExecutionException, TimeoutException {
         Event ev = withListener("EmitNumber", (eventName) -> service.emit(eventName, 123));
-        assertEquals(123, ((JsonNumber)ev.body).intValue());
+        assertEquals(123, ev.body);
     }
-
 
     @Test
     public void testDoubleEmit() throws InterruptedException, ExecutionException, TimeoutException {
         Event ev = withListener("EmitDouble", (eventName) -> service.emit(eventName, 123.456));
-        assertEquals(123.456, ((JsonNumber)ev.body).doubleValue(), 0.0001);
+        assertEquals(123.456, (double)ev.body, 0.0001);
     }
 
     @Test
     public void testBoolEmit() throws InterruptedException, ExecutionException, TimeoutException {
         Event ev = withListener("EmitBool", (eventName) -> service.emit(eventName, true));
-        assertEquals(JsonValue.TRUE, ev.body);
+        assertEquals(true, ev.body);
     }
 
     @Test
     public void testNullEmit() throws InterruptedException, ExecutionException, TimeoutException {
         Event ev = withListener("EmitBool", (eventName) -> service.emit(eventName));
-        assertEquals(JsonValue.NULL, ev.body);
+        assertEquals(null, ev.body);
     }
 
     @Test
@@ -183,11 +179,11 @@ public class ServiceTest{
 
         service.emit("EventEmitTest", 0);
 
-        assertEquals("TestString", ((JsonString)stringOk.get(1, TimeUnit.SECONDS).body).getString());
-        assertEquals(893, ((JsonNumber)intOk.get(1, TimeUnit.SECONDS).body).longValue());
-        assertEquals(893.456, ((JsonNumber)doubleOk.get(1, TimeUnit.SECONDS).body).doubleValue(), 0.0001);
-        assertEquals(JsonValue.TRUE, boolOk.get(1, TimeUnit.SECONDS).body);
-        assertEquals(JsonValue.NULL, nullOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals("TestString", stringOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals(893, intOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals(893.456, (double)doubleOk.get(1, TimeUnit.SECONDS).body, 0.0001);
+        assertEquals(true, boolOk.get(1, TimeUnit.SECONDS).body);
+        assertEquals(null, nullOk.get(1, TimeUnit.SECONDS).body);
     }
 
     @Test

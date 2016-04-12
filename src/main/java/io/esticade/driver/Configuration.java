@@ -1,11 +1,12 @@
 package io.esticade.driver;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javax.json.Json;
-import javax.json.JsonObject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -48,12 +49,13 @@ class Configuration {
     }
 
     private void parseConfig(String configFile) {
+        ObjectMapper om = new ObjectMapper();
         try {
-            JsonObject json = (JsonObject) Json.createReader(new FileInputStream(configFile)).read();
-            amqpUrl = json.getString("connectionURL", amqpUrl);
-            exchange = json.getString("exchange", exchange);
-            engraved = json.getBoolean("engraved", engraved);
-        } catch (FileNotFoundException e) {
+            JsonNode json = om.readTree(new File(configFile));
+            amqpUrl = json.get("connectionURL").asText(amqpUrl);
+            exchange = json.get("exchange").asText(exchange);
+            engraved = json.get("engraved").asBoolean(engraved);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

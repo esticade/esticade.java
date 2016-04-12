@@ -1,12 +1,11 @@
 package io.esticade;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.IntNode;
 import io.esticade.driver.ConnectionFactory;
-import io.esticade.driver.Connector;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonValue;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -18,70 +17,70 @@ public final class Event {
     public final String service;
 
     public final String name;
-    public final JsonValue body;
+    public final Object body;
 
     private ServiceParams serviceParams;
 
-    Event(ServiceParams serviceParams, String name, JsonValue payload){
+    Event(ServiceParams serviceParams, String eventId, String name, Object payload, String correlationId, String correlationBlock, String parentId){
         this.name = name;
         this.body = payload;
         this.serviceParams = serviceParams;
-        this.eventId = UUID.randomUUID().toString();
-        this.correlationId = UUID.randomUUID().toString();
-        this.correlationBlock = serviceParams.serviceName;
-        this.parentId = null;
+        this.eventId = eventId;
+        this.correlationId = correlationId;
+        this.correlationBlock = correlationBlock;
+        this.parentId = parentId;
         this.service = serviceParams.serviceName;
     }
 
-    private Event(ServiceParams serviceParams, String name, JsonValue payload, Event parentEvent){
-        this.name = name;
-        this.body = payload;
-        this.serviceParams = serviceParams;
-        this.eventId = UUID.randomUUID().toString();
-        this.correlationId = parentEvent.correlationId;
-        this.correlationBlock = parentEvent.correlationBlock;
-        this.parentId = parentEvent.eventId;
-        this.service = serviceParams.serviceName;
+    Event(ServiceParams serviceParams, String name, Object payload){
+        this(serviceParams, UUID.randomUUID().toString(), name, payload, UUID.randomUUID().toString(), serviceParams.correlationBlock, null);
     }
 
-    Event(ServiceParams serviceParams, JsonObject obj) {
-        this.name = obj.getString("name");
-        this.body = obj.get("body");
-        this.serviceParams = serviceParams;
-        this.correlationId = obj.getString("correlationId");
-        this.correlationBlock = obj.getString("correlationBlock");
-        this.eventId = obj.getString("eventId");
-        this.parentId = obj.getString("parentId", null);
-        this.service = obj.getString("service");
+    private Event(ServiceParams serviceParams, String name, Object payload, Event parentEvent){
+        this(serviceParams, UUID.randomUUID().toString(), name, payload, parentEvent.correlationId, parentEvent.correlationBlock, parentEvent.eventId);
+    }
+
+    Event(ServiceParams serviceParams, JsonNode obj) {
+        this(
+            serviceParams,
+            obj.get("eventId").asText(),
+            obj.get("name").asText(),
+            toAppropriateType(obj.get("body")),
+            obj.get("correlationId").asText(),
+            obj.get("correlationBlock").asText(),
+            null
+        );
+    }
+
+    private static Object toAppropriateType(JsonNode body) {
+        switch(body.getNodeType()){
+            case BOOLEAN: return body.asBoolean();
+            case NULL: return null;
+            case NUMBER:
+                Object result;
+                if(body.isInt()) {
+                    result = body.asInt();
+                } else {
+                    result = body.asDouble();
+                }
+                return result;
+            case STRING: return body.asText();
+            default: return body;
+        }
     }
 
     @Override
     public String toString() {
-        return toJsonObject().toString();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    private JsonObject toJsonObject() {
-        JsonObjectBuilder builder = Json.createObjectBuilder();
-        builder.add("correlationId", correlationId)
-                .add("correlationBlock", correlationBlock)
-                .add("eventId", eventId)
-                .add("service", service)
-                .add("name", name);
-
-        if (body != null) {
-            builder.add("body", body);
-        } else {
-            builder.addNull("body");
-        }
-
-        if (parentId != null) {
-            builder.add("parentId", parentId);
-        }
-
-        return builder.build();
-    }
-
-    public void emit(String eventName, JsonValue payload) {
+    public void emit(String eventName, Object payload) {
         try {
             ConnectionFactory.getConnection()
                 .emit(new Event(serviceParams, eventName, payload, this));
@@ -90,23 +89,7 @@ public final class Event {
         }
     }
 
-    public void emit(String eventName, String payload) {
-        emit(eventName, JsonConvert.toJsonValue(payload));
-    }
-
-    public void emit(String eventName, int payload) {
-        emit(eventName, JsonConvert.toJsonValue(payload));
-    }
-
-    public void emit(String eventName, double payload) {
-        emit(eventName, JsonConvert.toJsonValue(payload));
-    }
-
-    public void emit(String eventName, boolean payload) {
-        emit(eventName, JsonConvert.toJsonValue(payload));
-    }
-
     public void emit(String eventName) {
-        emit(eventName, JsonValue.NULL);
+        emit(eventName, null);
     }
 }

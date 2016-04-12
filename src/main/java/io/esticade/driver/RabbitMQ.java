@@ -1,13 +1,12 @@
 package io.esticade.driver;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.ConnectionFactory;
 import io.esticade.Event;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -22,13 +21,21 @@ class RabbitMQ implements Connector {
     private Connection connection;
     private Channel channel;
     private BasicProperties props;
+    private ObjectMapper mapper;
 
     RabbitMQ(String connectionUri, String exchange, boolean engraved) throws NoSuchAlgorithmException, KeyManagementException, URISyntaxException, IOException, TimeoutException {
         this.exchange = exchange;
         this.engraved = engraved;
 
+        mapper = new ObjectMapper();
+
         ConnectionFactory factory = new ConnectionFactory();
         factory.setUri(connectionUri);
+
+        // Hack to support default
+        if(factory.getVirtualHost().equals(""))
+            factory.setVirtualHost("/");
+
         connection = factory.newConnection();
         channel = connection.createChannel();
         channel.exchangeDeclare(this.exchange, "topic", true);
@@ -48,7 +55,7 @@ class RabbitMQ implements Connector {
     }
 
     @Override
-    public String registerListener(String routingKey, String queueName, Consumer<JsonObject> callback) {
+    public String registerListener(String routingKey, String queueName, Consumer<JsonNode> callback) {
         try {
             String queue = getQueue(queueName);
             channel.queueBind(queue, exchange, routingKey);
@@ -88,7 +95,7 @@ class RabbitMQ implements Connector {
         }
     }
 
-    private DefaultConsumer createConsumer(final Consumer<JsonObject> callback) {
+    private DefaultConsumer createConsumer(final Consumer<JsonNode> callback) {
         return new DefaultConsumer(channel) {
             @Override
             public void handleDelivery(String consumerTag,
@@ -99,20 +106,10 @@ class RabbitMQ implements Connector {
             {
                 long deliveryTag = envelope.getDeliveryTag();
 
-                JsonObject obj = parseJsonObject(body);
-
+                JsonNode obj = mapper.readTree(body);
                 callback.accept(obj);
-
                 channel.basicAck(deliveryTag, false);
             }
         };
     }
-
-    private JsonObject parseJsonObject(byte[] body) {
-        JsonReader reader = Json.createReader(new ByteArrayInputStream(body));
-        JsonObject obj = reader.readObject();
-        reader.close();
-        return obj;
-    }
-
 }

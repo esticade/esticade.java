@@ -3,8 +3,6 @@ package io.esticade;
 import io.esticade.driver.ConnectionFactory;
 import io.esticade.driver.Connector;
 
-import javax.json.JsonObject;
-import javax.json.JsonValue;
 import java.io.IOException;
 import java.util.function.Consumer;
 
@@ -17,24 +15,8 @@ public class Service {
         connector = ConnectionFactory.getConnection();
     }
 
-    public void emit(String eventName, JsonValue payload){
+    public void emit(String eventName, Object payload){
         connector.emit(new Event(params, eventName, payload));
-    }
-
-    public void emit(String eventName, String payload){
-        connector.emit(new Event(params, eventName, JsonConvert.toJsonValue(payload)));
-    }
-
-    public void emit(String eventName, int payload) {
-        connector.emit(new Event(params, eventName, JsonConvert.toJsonValue(payload)));
-    }
-
-    public void emit(String eventName, double payload) {
-        connector.emit(new Event(params, eventName, JsonConvert.toJsonValue(payload)));
-    }
-
-    public void emit(String eventName, boolean payload) {
-        connector.emit(new Event(params, eventName, JsonConvert.toJsonValue(payload)));
     }
 
     public void emit(String eventName) {
@@ -42,7 +24,7 @@ public class Service {
     }
 
     public void on(String eventName, Consumer<Event> callback) {
-        connector.registerListener("*." + eventName, params.serviceName + "-" + eventName, (JsonObject obj) -> callback.accept(new Event(params, obj)));
+        connector.registerListener("*." + eventName, params.serviceName + "-" + eventName, obj -> callback.accept(new Event(params, obj)));
     }
 
     public void shutdown() {
@@ -50,30 +32,14 @@ public class Service {
     }
 
     public void alwaysOn(String eventName, Consumer<Event> callback) {
-        connector.registerListener("*." + eventName, null, (JsonObject obj) -> callback.accept(new Event(params, obj)));
+        connector.registerListener("*." + eventName, null, obj -> callback.accept(new Event(params, obj)));
     }
 
-    public EmitChain emitChain(String eventName, JsonValue payload) {
+    public EmitChain emitChain(String eventName, Object payload) {
         return new EmitChain(eventName, payload, params, connector);
     }
 
-    public EmitChain emitChain(String eventName, String payload) {
-        return new EmitChain(eventName, JsonConvert.toJsonValue(payload), params, connector);
-    }
-
-    public EmitChain emitChain(String eventName, long payload) {
-        return new EmitChain(eventName, JsonConvert.toJsonValue(payload), params, connector);
-    }
-
-    public EmitChain emitChain(String eventName, double payload) {
-        return new EmitChain(eventName, JsonConvert.toJsonValue(payload), params, connector);
-    }
-
-    public EmitChain emitChain(String eventName, boolean payload) {
-        return new EmitChain(eventName, JsonConvert.toJsonValue(payload), params, connector);
-    }
-
     public EmitChain emitChain(String eventName) {
-        return new EmitChain(eventName, JsonValue.NULL, params, connector);
+        return new EmitChain(eventName, null, params, connector);
     }
 }

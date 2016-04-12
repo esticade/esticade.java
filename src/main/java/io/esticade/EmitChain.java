@@ -2,7 +2,6 @@ package io.esticade;
 
 import io.esticade.driver.Connector;
 
-import javax.json.JsonValue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -18,7 +17,7 @@ class EmitChain {
     private List<String> ctags = new ArrayList<>();
     private Timer timer = new Timer();
 
-    EmitChain(String eventName, JsonValue payload, ServiceParams serviceParams, Connector connector) {
+    EmitChain(String eventName, Object payload, ServiceParams serviceParams, Connector connector) {
         this.emittedEvent = new Event(serviceParams, eventName, payload);
         this.serviceParams = serviceParams;
         this.connector = connector;
