@@ -206,6 +206,21 @@ public class ServiceTest{
         assertNotEquals("Events emitted by different services should have different correlation blocks", service1Event.correlationBlock, service2Event.correlationBlock);
     }
 
+    @Test
+    public void testObjectMapper() throws InterruptedException, ExecutionException, TimeoutException {
+        TestBean bean = new TestBean(123, 45.63, "Test");
+
+        CompletableFuture<Event> serviceResolved = new CompletableFuture<>();
+
+        service.on("MapperTest", serviceResolved::complete);
+        service.emit("MapperTest", bean);
+
+        Event event = serviceResolved.get(2, TimeUnit.SECONDS);
+        TestBean receivedBean = event.bodyAs(TestBean.class);
+
+        assertEquals("Received bean should be equal to the one sent", bean, receivedBean);
+    }
+
     private Event withListener(String eventName, Consumer<String> emit) throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<Event> future = new CompletableFuture<>();
         service.on(eventName, future::complete);

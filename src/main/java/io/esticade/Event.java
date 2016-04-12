@@ -3,7 +3,6 @@ package io.esticade;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.IntNode;
 import io.esticade.driver.ConnectionFactory;
 
 import java.io.IOException;
@@ -91,5 +90,10 @@ public final class Event {
 
     public void emit(String eventName) {
         emit(eventName, null);
+    }
+
+    public <T> T bodyAs(Class<T> testBeanClass) {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.convertValue(body, testBeanClass);
     }
 }
