@@ -4,9 +4,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import javax.json.*;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -14,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Created by jaan.pullerits on 11/04/16.
@@ -51,4 +50,47 @@ public class EventChainTest {
         assertEquals(testObject, msg.body);
     }
 
+    @Test
+    public void testEmitChainCanCatchMessagesFromOtherServices() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        CompletableFuture<Event> responseReceived = new CompletableFuture<>();
+
+        JsonObject testObject = Json.createObjectBuilder()
+                .add("string", "The String")
+                .build();
+
+        Service service2 = new Service("Service 2");
+        service2.on("EmitChainTest2", (ev) -> ev.emit("EmitChainTest-Response", testObject));
+
+        service.emitChain("EmitChainTest2", testObject)
+                .on("EmitChainTest-Response", responseReceived::complete)
+                .execute();
+
+        Event msg = responseReceived.get(1, TimeUnit.SECONDS);
+        assertEquals(testObject, msg.body);
+    }
+
+    @Test
+    public void testEmitFromOutsideTheChainWillNotReachHandler() throws InterruptedException, ExecutionException, TimeoutException {
+        CompletableFuture<Event> responseReceivedInChainHandler = new CompletableFuture<>();
+        CompletableFuture<Event> responseReceivedInNormalHandler = new CompletableFuture<>();
+        CompletableFuture<Event> responder = new CompletableFuture<>();
+
+        service.on("OutsideChainTestResponse", responseReceivedInNormalHandler::complete);
+
+        service.on("OutsideChainTest", responder::complete);
+
+        service.emitChain("OutsideChainTest")
+                .on("OutsideChainTestResponse", responseReceivedInChainHandler::complete)
+                .execute();
+
+        service.emit("OutsideChainTestResponse", 123);
+
+        Event event = responseReceivedInNormalHandler.get(2, TimeUnit.SECONDS);
+        assertEquals("The message received by global handler should be 123.", 123, ((JsonNumber)event.body).intValue());
+        assertFalse("The chain handler should not yet receive event", responseReceivedInChainHandler.isDone());
+
+        responder.get(2, TimeUnit.SECONDS).emit("OutsideChainTestResponse", 456);
+        int receivedValue = ((JsonNumber)responseReceivedInChainHandler.get(2, TimeUnit.SECONDS).body).intValue();
+        assertEquals("Chain handler should receive 456", 456, receivedValue);
+    }
 }

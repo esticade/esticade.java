@@ -104,6 +104,12 @@ public class ServiceTest{
     }
 
     @Test
+    public void testNullEmit() throws InterruptedException, ExecutionException, TimeoutException {
+        Event ev = withListener("EmitBool", (eventName) -> service.emit(eventName));
+        assertEquals(JsonValue.NULL, ev.body);
+    }
+
+    @Test
     public void testBalance() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         Service service2 = new Service("TestService");
 
@@ -178,6 +184,26 @@ public class ServiceTest{
         assertEquals(893, ((JsonNumber)intOk.get(1, TimeUnit.SECONDS).body).longValue());
         assertEquals(893.456, ((JsonNumber)doubleOk.get(1, TimeUnit.SECONDS).body).doubleValue(), 0.0001);
         assertEquals(JsonValue.TRUE, boolOk.get(1, TimeUnit.SECONDS).body);
+    }
+
+    @Test
+    public void testDifferentServiceShouldHaveDifferentCorrelationBlocks() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        CompletableFuture<Event> firstService = new CompletableFuture<>();
+        CompletableFuture<Event> secondService = new CompletableFuture<>();
+
+        service.on("CorrelationBlockTest1", firstService::complete);
+        service.on("CorrelationBlockTest2", secondService::complete);
+
+        service.emit("CorrelationBlockTest1");
+
+
+        Service service2 = new Service("Second Test Service");
+        service2.emit("CorrelationBlockTest2");
+
+        Event service1Event = firstService.get(2, TimeUnit.SECONDS);
+        Event service2Event = secondService.get(2, TimeUnit.SECONDS);
+
+        assertNotEquals("Events emitted by different services should have different correlation blocks", service1Event.correlationBlock, service2Event.correlationBlock);
     }
 
     private Event withListener(String eventName, Consumer<String> emit) throws InterruptedException, ExecutionException, TimeoutException {
