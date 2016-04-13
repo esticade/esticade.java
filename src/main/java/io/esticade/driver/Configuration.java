@@ -52,9 +52,9 @@ class Configuration {
         ObjectMapper om = new ObjectMapper();
         try {
             JsonNode json = om.readTree(new File(configFile));
-            amqpUrl = json.get("connectionURL").asText(amqpUrl);
-            exchange = json.get("exchange").asText(exchange);
-            engraved = json.get("engraved").asBoolean(engraved);
+            amqpUrl = json.has("connectionURL")?json.get("connectionURL").asText():amqpUrl;
+            exchange = json.has("exchange")?json.get("exchange").asText():exchange;
+            engraved = json.has("engraved")?json.get("engraved").asBoolean():engraved;
         } catch (IOException e) {
             e.printStackTrace();
         }
