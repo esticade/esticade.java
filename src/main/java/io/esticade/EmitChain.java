@@ -14,7 +14,7 @@ class EmitChain {
     private final Event emittedEvent;
 
     private int timeout = 60000;
-    private List<String> ctags = new ArrayList<>();
+    private List<String> cTags = new ArrayList<>();
     private Timer timer = new Timer();
 
     EmitChain(String eventName, Object payload, ServiceParams serviceParams, Connector connector) {
@@ -24,7 +24,7 @@ class EmitChain {
     }
 
     public EmitChain on(String eventName, Consumer<Event> callback) {
-        ctags.add(connector.registerListener(emittedEvent.correlationBlock + "." + eventName, null, ev -> {
+        cTags.add(connector.registerListener(emittedEvent.correlationBlock + "." + eventName, null, ev -> {
             Event event = new Event(serviceParams, ev);
             if(event.correlationId.equals(emittedEvent.correlationId)) {
                 callback.accept(event);
@@ -44,11 +44,11 @@ class EmitChain {
     }
 
     private void terminate() {
-        ctags.forEach((tag) -> connector.deleteListener(tag));
+        cTags.forEach((tag) -> connector.deleteListener(tag));
     }
 
-    public EmitChain timeout(int timeoutMsec) {
-        timeout = timeoutMsec;
+    public EmitChain timeout(int timeoutMSec) {
+        timeout = timeoutMSec;
         return this;
     }
 }

@@ -2,7 +2,6 @@ package io.esticade;
 
 import io.esticade.driver.ConnectionFactory;
 import io.esticade.driver.Connector;
-
 import java.io.IOException;
 import java.util.function.Consumer;
 

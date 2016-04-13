@@ -2,14 +2,10 @@ package io.esticade.driver;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.NoSuchElementException;
 import static java.util.Arrays.asList;
 
@@ -23,24 +19,20 @@ class Configuration {
     private Configuration(){
         setDefaults();
         loadConfigFromFiles();
-        getConfigFromEnv();
     }
 
     private void loadConfigFromFiles() {
-        List<String> configFiles = asList(
-            getConfigFromEnv(),
-            getConfigFromCwd(),
-            getConfigFromUserHome(),
-            getGlobalConfig()
-        );
-
-        String configFile = null;
         try {
-            configFile = configFiles.stream()
-                    .filter((item) -> item != null)
-                    .filter((item) -> new File(item).exists())
-                    .findFirst()
-                    .get();
+            String configFile = asList(
+                getConfigFromEnv(),
+                getConfigFromCwd(),
+                getConfigFromUserHome(),
+                getGlobalConfig()
+            ).stream()
+                .filter((item) -> item != null)
+                .filter((item) -> new File(item).exists())
+                .findFirst()
+                .get();
 
             parseConfig(configFile);
         } catch (NoSuchElementException e) {
@@ -52,9 +44,9 @@ class Configuration {
         ObjectMapper om = new ObjectMapper();
         try {
             JsonNode json = om.readTree(new File(configFile));
-            amqpUrl = json.has("connectionURL")?json.get("connectionURL").asText():amqpUrl;
-            exchange = json.has("exchange")?json.get("exchange").asText():exchange;
-            engraved = json.has("engraved")?json.get("engraved").asBoolean():engraved;
+            amqpUrl = json.hasNonNull("connectionURL")?json.get("connectionURL").asText():amqpUrl;
+            exchange = json.hasNonNull("exchange")?json.get("exchange").asText():exchange;
+            engraved = json.hasNonNull("engraved")?json.get("engraved").asBoolean():engraved;
         } catch (IOException e) {
             e.printStackTrace();
         }
