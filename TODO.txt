@@ -1,0 +1,7 @@
+TODO
+====
+
+- Add JavaDoc
+- Add README.md
+- Performance test emitChain (see if listener pooling is required)
+- Upload to maven repository somewhere
