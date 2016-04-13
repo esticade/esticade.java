@@ -31,7 +31,7 @@ class RabbitMQ implements Connector {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setUri(connectionUri);
 
-        // Hack to support default
+        // Hack to support default vhost, for some reason the library is parsing it incorrectly from the URL.
         if(factory.getVirtualHost().equals(""))
             factory.setVirtualHost("/");
 
@@ -68,7 +68,9 @@ class RabbitMQ implements Connector {
     private String getQueue(String queueName) throws IOException {
         AMQP.Queue.DeclareOk queueOk;
         if(queueName != null){
-            queueOk = channel.queueDeclare(queueName, false, false, true, null);
+            boolean durable = engraved;
+            boolean autoDelete = !engraved;
+            queueOk = channel.queueDeclare(queueName, durable, false, autoDelete, null);
         } else {
             queueOk = channel.queueDeclare();
         }
