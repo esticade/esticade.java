@@ -23,6 +23,17 @@ class EmitChain {
         this.connector = connector;
     }
 
+
+
+    /**
+     * Register exclusive temporary non-shared event handler.
+     *
+     * <p>Will only receive events that are caused by the same event that created the chain.</p>
+     *
+     * @param eventName Name of the event to listen to as a plain text string.
+     * @param callback Callback with single argument that will be called once the event is received.
+     */
+
     public EmitChain on(String eventName, Consumer<Event> callback) {
         cTags.add(connector.registerListener(emittedEvent.correlationBlock + "." + eventName, null, ev -> {
             Event event = new Event(serviceParams, ev);
@@ -33,6 +44,12 @@ class EmitChain {
         return this;
     }
 
+    /**
+     * Trigger the event chain.
+     *
+     * <p>Please not that this method will trigger the actual event after it is called and all requested event
+     * listeners are finalized.</p>
+     */
     public void execute() {
         timer.schedule(new TimerTask() {
             @Override
@@ -47,6 +64,11 @@ class EmitChain {
         cTags.forEach((tag) -> connector.deleteListener(tag));
     }
 
+    /**
+     * Set the timeout in milliseconds after which the chain expires and no more events are listened for.
+     * @param timeoutMSec
+     * @return
+     */
     public EmitChain timeout(int timeoutMSec) {
         timeout = timeoutMSec;
         return this;

@@ -9,13 +9,39 @@ import java.io.IOException;
 import java.util.UUID;
 
 public final class Event {
+    /**
+     * Correlation ID used for connecting events into chains.
+     */
     public final String correlationId;
+
+    /**
+     * Correlation block, used for similar purposes for more optimized routing.
+     */
     public final String correlationBlock;
+
+    /**
+     * Event unique ID
+     */
     public final String eventId;
+
+    /**
+     * Event ID of an event that caused the current event.
+     */
     public final String parentId;
+
+    /**
+     * Service name that triggered the event
+     */
     public final String service;
 
+    /**
+     * Event name
+     */
     public final String name;
+
+    /**
+     * Object body. For more friendlier interface use {@link #bodyAs(Class)} method.
+     */
     public final Object body;
 
     private ServiceParams serviceParams;
@@ -68,6 +94,10 @@ public final class Event {
         }
     }
 
+    /**
+     * Get string representation of the object
+     * @return String representation of the object.
+     */
     @Override
     public String toString() {
         try {
@@ -79,6 +109,14 @@ public final class Event {
         return null;
     }
 
+    /**
+     * Emit an event with payload
+     *
+     * <p>Always use this method when the triggered event is caused by the event received.</p>
+     *
+     * @param eventName
+     * @param payload
+     */
     public void emit(String eventName, Object payload) {
         try {
             ConnectionFactory.getConnection()
@@ -88,10 +126,23 @@ public final class Event {
         }
     }
 
+    /**
+     * Emit event without payload.
+     *
+     * <p>Always use this method when the triggered event is caused by the event received.</p>
+     *
+     * @param eventName
+     */
     public void emit(String eventName) {
         emit(eventName, null);
     }
 
+    /**
+     * Map received event json to a java bean.
+     *
+     * @param testBeanClass Class type of the received event body
+     * @return Event body mapped into a bean.
+     */
     public <T> T bodyAs(Class<T> testBeanClass) {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.convertValue(body, testBeanClass);
