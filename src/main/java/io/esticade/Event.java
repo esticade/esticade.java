@@ -114,8 +114,8 @@ public final class Event {
      *
      * <p>Always use this method when the triggered event is caused by the event received.</p>
      *
-     * @param eventName
-     * @param payload
+     * @param eventName Name of the event as plain text string
+     * @param payload Serializable java object that will be sent to the event network.
      */
     public void emit(String eventName, Object payload) {
         try {
@@ -131,7 +131,7 @@ public final class Event {
      *
      * <p>Always use this method when the triggered event is caused by the event received.</p>
      *
-     * @param eventName
+     * @param eventName Name of the event as plain text string
      */
     public void emit(String eventName) {
         emit(eventName, null);

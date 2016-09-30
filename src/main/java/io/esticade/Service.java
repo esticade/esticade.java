@@ -103,7 +103,7 @@ public class Service {
      * Emit an event and listen for events caused by this event.
      *
      * <p>Same as {@link #emitChain(String, Object)} except for events without payload.</p>
-     * @param eventName
+     * @param eventName Name of the event as plain text string
      * @return Emission chain object, allowing to register event handlers via fluent interface.
      */
     public EmitChain emitChain(String eventName) {
