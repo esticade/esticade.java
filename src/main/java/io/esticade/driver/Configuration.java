@@ -10,9 +10,9 @@ import java.util.NoSuchElementException;
 import static java.util.Arrays.asList;
 
 class Configuration {
-    public String amqpUrl;
-    public boolean engraved;
-    public String exchange;
+    private String amqpUrl;
+    private boolean engraved;
+    private String exchange;
 
     private static Configuration config;
 
@@ -44,9 +44,9 @@ class Configuration {
         ObjectMapper om = new ObjectMapper();
         try {
             JsonNode json = om.readTree(new File(configFile));
-            amqpUrl = json.hasNonNull("connectionURL")?json.get("connectionURL").asText():amqpUrl;
-            exchange = json.hasNonNull("exchange")?json.get("exchange").asText():exchange;
-            engraved = json.hasNonNull("engraved")?json.get("engraved").asBoolean():engraved;
+            amqpUrl = json.hasNonNull("connectionURL")?json.get("connectionURL").asText(): amqpUrl;
+            exchange = json.hasNonNull("exchange")?json.get("exchange").asText(): exchange;
+            engraved = json.hasNonNull("engraved")?json.get("engraved").asBoolean(): engraved;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -74,8 +74,7 @@ class Configuration {
     }
 
     private String getConfigFromEnv() {
-        String configFile = System.getenv("ESTICADERC");
-        return configFile;
+        return System.getenv("ESTICADERC");
     }
 
     private void setDefaults() {
@@ -90,5 +89,37 @@ class Configuration {
 
         config = new Configuration();
         return config;
+    }
+
+    public String getAmqpUrl() {
+        return getEnv("ESTICADE_CONNECTION_URL", amqpUrl);
+    }
+
+    public boolean isEngraved() {
+        return getEnv("ESTICADE_ENGRAVED", engraved);
+    }
+
+    public String getExchange() {
+        return getEnv("ESTICADE_EXCHANGE", exchange);
+    }
+
+    private String getEnv(String name, String defaultValue){
+        String value = System.getenv(name);
+        return value != null ? value : defaultValue;
+    }
+
+    private Boolean getEnv(String name, Boolean defaultValue){
+        String value = System.getenv(name);
+        Boolean boolValue = defaultValue;
+
+        if(value != null){
+            boolValue = (
+                value.equalsIgnoreCase("true") ||
+                value.equalsIgnoreCase("yes") ||
+                value.equalsIgnoreCase("on")
+            );
+        }
+
+        return boolValue;
     }
 }

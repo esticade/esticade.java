@@ -14,13 +14,15 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-class RabbitMQ implements Connector {
+class RabbitMQ extends Connector {
     private final boolean engraved;
     private final String exchange;
     private Connection connection;
     private Channel channel;
     private BasicProperties props;
     private ObjectMapper mapper;
+
+    private int pending = 0;
 
     RabbitMQ(String connectionUri, String exchange, boolean engraved) throws NoSuchAlgorithmException, KeyManagementException, URISyntaxException, IOException, TimeoutException {
         this.exchange = exchange;
@@ -78,7 +80,7 @@ class RabbitMQ implements Connector {
     }
 
     @Override
-    public void shutdown() {
+    protected void terminate() {
         try {
             connection.close();
             connection = null;
@@ -96,6 +98,11 @@ class RabbitMQ implements Connector {
         }
     }
 
+    @Override
+    public boolean isPending() {
+        return pending > 0;
+    }
+
     private DefaultConsumer createConsumer(final Consumer<JsonNode> callback) {
         return new DefaultConsumer(channel) {
             @Override
@@ -108,7 +115,9 @@ class RabbitMQ implements Connector {
                 long deliveryTag = envelope.getDeliveryTag();
 
                 JsonNode obj = mapper.readTree(body);
+                pending++;
                 callback.accept(obj);
+                pending--;
                 channel.basicAck(deliveryTag, false);
             }
         };

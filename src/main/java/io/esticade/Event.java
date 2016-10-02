@@ -46,7 +46,7 @@ public final class Event {
 
     private ServiceParams serviceParams;
 
-    Event(ServiceParams serviceParams, String eventId, String name, Object payload, String correlationId, String correlationBlock, String parentId){
+    private Event(ServiceParams serviceParams, String eventId, String name, Object payload, String correlationId, String correlationBlock, String parentId){
         this.name = name;
         this.body = payload;
         this.serviceParams = serviceParams;

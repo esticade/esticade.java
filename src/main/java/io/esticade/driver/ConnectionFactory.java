@@ -8,7 +8,7 @@ public class ConnectionFactory {
 
         if(connector == null){
             try {
-                connector = new RabbitMQ(config.amqpUrl, config.exchange, config.engraved);
+                connector = new RabbitMQ(config.getAmqpUrl(), config.getExchange(), config.isEngraved());
             } catch (Exception e) {
                 throw new IOException(e);
             }
@@ -17,7 +17,7 @@ public class ConnectionFactory {
     }
 
     public static void shutdown() {
-        connector.shutdown();
+        new AsyncShutdown(connector).start();
         connector = null;
     }
 }

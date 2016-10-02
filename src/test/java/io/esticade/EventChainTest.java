@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class EventChainTest {
     Service service;
@@ -93,6 +94,7 @@ public class EventChainTest {
     @Test
     public void testEventSentAfterTimeoutWillNotBeReceived() throws InterruptedException {
         CompletableFuture<Event> response = new CompletableFuture<>();
+        final boolean[] timeoutCallbackCalled = {false};
 
         service.on("TimeOutEvent", event -> {
             try {
@@ -105,12 +107,13 @@ public class EventChainTest {
 
         service.emitChain("TimeOutEvent")
                 .on("TimeOutEvent-Response", response::complete)
-                .timeout(300)
+                .timeout(300, event -> timeoutCallbackCalled[0] = true)
                 .execute();
 
         Thread.sleep(600);
 
         assertFalse("The TimeOutEvent-Response should never be received", response.isDone());
+        assertTrue("The timeout callback should have been called", timeoutCallbackCalled[0]);
     }
 
     @Test
