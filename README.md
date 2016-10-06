@@ -150,7 +150,7 @@ public class RequestService {
 ```
 
 Additionally following beans are required for transport in each of the services:
-```
+```java
 class MultiplicationRequest {
     private double a;
     private double b;
@@ -227,7 +227,7 @@ to manually delete the queues from RabbitMQ.
 
 Example:
 
-```
+```json
 { 
     "connectionURL": "amqp://user:pass@example.com/vhost",
     "exchange": "EventNetwork"
