@@ -13,14 +13,14 @@ Add maven dependency to your project:
 <dependency>
    <groupId>io.esticade</groupId>
    <artifactId>esticade</artifactId>
-   <version>1.0.1</version>
+   <version>1.0.2</version>
 </dependency>
 ```
 
 Or using Gradle:
 
 ```groovy
-compile 'io.esticade:esticade:1.0.1'
+compile 'io.esticade:esticade:1.0.2'
 ```
 
 # API
