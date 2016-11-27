@@ -5,7 +5,7 @@ public class ConnectionFactory {
     private static Connector connector;
     public static Connector getConnection() throws IOException {
         Configuration config = Configuration.getConfig();
-
+        
         if(connector == null){
             try {
                 connector = new RabbitMQ(config.getAmqpUrl(), config.getExchange(), config.isEngraved());
