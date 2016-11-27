@@ -11,10 +11,11 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-class RabbitMQ extends Connector {
+class RabbitMQ extends Connector implements ShutdownListener {
     private final boolean engraved;
     private final String exchange;
     private final String connectionUri;
@@ -25,7 +26,10 @@ class RabbitMQ extends Connector {
     private ObjectMapper mapper;
     private Channel amqpChannel;
 
+    private HashMap<String, Listener> listeners = new HashMap<>();
+
     private int pending = 0;
+    private boolean channelRetryEnabled = true;
 
     RabbitMQ(String connectionUri, String exchange, boolean engraved) throws NoSuchAlgorithmException, KeyManagementException, URISyntaxException, IOException, TimeoutException {
         this.exchange = exchange;
@@ -51,6 +55,8 @@ class RabbitMQ extends Connector {
         Channel channel = connection.createChannel();
         channel.exchangeDeclare(this.exchange, "topic", true);
 
+        connection.addShutdownListener(this);
+
         return channel;
     }
 
@@ -68,6 +74,7 @@ class RabbitMQ extends Connector {
                 } else {
                     amqpChannel = channel = getChannelRaw();
                     timeoutSec = INITIAL_RETRY_SEC;
+                    reRegisterListeners();
                 }
                 break;
             } catch (URISyntaxException e) {
@@ -93,6 +100,12 @@ class RabbitMQ extends Connector {
         return channel;
     }
 
+    private void reRegisterListeners() {
+        if(listeners.size() > 0){
+            listeners.forEach((s, listener) -> registerListenerRaw(listener));
+        }
+    }
+
     @Override
     public void emit(Event event) {
         try {
@@ -104,15 +117,26 @@ class RabbitMQ extends Connector {
 
     @Override
     public String registerListener(String routingKey, String queueName, Consumer<JsonNode> callback) {
+        Listener listener = new Listener()
+            .setRoutingKey(routingKey)
+            .setQueueName(queueName)
+            .setCallback(callback);
+
+        registerListenerRaw(listener);
+        listeners.put(listener.getId(), listener);
+
+        return listener.getId();
+    }
+
+    private void registerListenerRaw(Listener listener) {
         Channel channel = getChannel();
         try {
-            String queue = getQueue(queueName);
-            channel.queueBind(queue, exchange, routingKey);
-            return channel.basicConsume(queue, false, createConsumer(callback));
+            String queue = getQueue(listener.getQueueName());
+            channel.queueBind(queue, exchange, listener.getRoutingKey());
+            listener.setCTag(channel.basicConsume(queue, false, createConsumer(listener.getCallback())));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
     }
 
     private String getQueue(String queueName) throws IOException {
@@ -130,6 +154,7 @@ class RabbitMQ extends Connector {
 
     @Override
     protected void terminate() {
+        channelRetryEnabled = false;
         try {
             connection.close();
             connection = null;
@@ -140,9 +165,14 @@ class RabbitMQ extends Connector {
 
     @Override
     public void deleteListener(String tag) {
+        Listener listener = listeners.remove(tag);
+        deleteListenerRaw(listener);
+    }
+
+    private void deleteListenerRaw(Listener listener) {
         Channel channel = getChannel();
         try {
-            channel.basicCancel(tag);
+            channel.basicCancel(listener.getCtag());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -155,6 +185,7 @@ class RabbitMQ extends Connector {
 
     private DefaultConsumer createConsumer(final Consumer<JsonNode> callback) {
         Channel channel = getChannel();
+
         return new DefaultConsumer(channel) {
             @Override
             public void handleDelivery(String consumerTag,
@@ -172,5 +203,13 @@ class RabbitMQ extends Connector {
                 channel.basicAck(deliveryTag, false);
             }
         };
+    }
+
+    @Override
+    public void shutdownCompleted(ShutdownSignalException e) {
+        if(channelRetryEnabled){
+            System.out.println("Shutdown called...");
+            getChannel();
+        }
     }
 }
